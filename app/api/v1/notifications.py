@@ -9,7 +9,7 @@ from app.schemas.notification import NotificationOut
 router = APIRouter()
 
 @router.get("", response_model=list[NotificationOut])
-def list_notifications(data=Depends(get_current_session), db: Session = Depends(get_db)):
+def list_notifications(data=Depends(get_current_session), db: OrmSession = Depends(get_db)):
     sess, user = data
     rows = db.execute(
     select(Notification)
@@ -19,7 +19,7 @@ def list_notifications(data=Depends(get_current_session), db: Session = Depends(
     return rows
 
 @router.post("/{notif_id}/mark-read")
-def mark_read(notif_id: int, data=Depends(get_current_session), db: Session = Depends(get_db)):
+def mark_read(notif_id: int, data=Depends(get_current_session), db: OrmSession = Depends(get_db)):
     n = db.get(Notification, notif_id)
     if not n:
         return {"message": "OK"}

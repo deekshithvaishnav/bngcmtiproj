@@ -12,7 +12,7 @@ from app.models.enums import UserRole, SessionEndReason
 from app.services.locks import release_lock_if_owner
 
 def get_current_session(
-    db: Session = Depends(get_db),
+    db: OrmSession = Depends(get_db),
     x_session_id: str | None = Header(None)
     ) -> tuple[SessionModel, User]:
     if not x_session_id:

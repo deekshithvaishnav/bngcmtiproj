@@ -21,11 +21,14 @@ from app.services.locks import get_active_lock, acquire_lock, release_lock_if_ow
 
 router = APIRouter()
 
+# Export router for FastAPI include_router usage
+__all__ = ["router"]
+
 def _now():
     return datetime.now(timezone.utc)
 
 @router.post("/login", response_model=LoginSuccessOut | FirstLoginRequiredOut | RoleInUseOut)
-def login(payload: LoginIn, request: Request, db: Session = Depends(get_db)):
+def login(payload: LoginIn, request: Request, db: OrmSession = Depends(get_db)):
     user = db.execute(select(User).where(User.username == payload.username)).scalar_one_or_none()
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
@@ -70,7 +73,7 @@ def login(payload: LoginIn, request: Request, db: Session = Depends(get_db)):
     return LoginSuccessOut(session_id=session_id, role=user.role.value, username=user.username, expires_at=expires_at)
 
 @router.get("/session-check", response_model=SessionCheckOut)
-def session_check(x_session_id: str | None = None, db: Session = Depends(get_db)):
+def session_check(x_session_id: str | None = None, db: OrmSession = Depends(get_db)):
     if not x_session_id:
         return SessionCheckOut(valid=False)
     sess = db.execute(select(SessionModel).where(SessionModel.session_id == x_session_id)).scalar_one_or_none()
@@ -90,7 +93,7 @@ def session_check(x_session_id: str | None = None, db: Session = Depends(get_db)
     return SessionCheckOut(valid=True, username=user.username, role=user.role.value, expires_at=sess.expires_at)
 
 @router.post("/logout", response_model=MessageOut)
-def logout(x_session_id: str | None = None, db: Session = Depends(get_db)):
+def logout(x_session_id: str | None = None, db: OrmSession = Depends(get_db)):
     if not x_session_id:
         return MessageOut(message="Logged out")
     sess = db.execute(select(SessionModel).where(SessionModel.session_id == x_session_id)).scalar_one_or_none()
@@ -104,7 +107,7 @@ def logout(x_session_id: str | None = None, db: Session = Depends(get_db)):
     return MessageOut(message="Logged out")
 
 @router.post("/first-login-change", response_model=MessageOut)
-def first_login_change(payload: FirstLoginChangeIn, db: Session = Depends(get_db)):
+def first_login_change(payload: FirstLoginChangeIn, db: OrmSession = Depends(get_db)):
     user = db.execute(select(User).where(User.username == payload.username)).scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -135,7 +138,7 @@ def parse_reset_token(token: str) -> str | None:
         return None
 
 @router.post("/request-reset", response_model=MessageOut)
-def request_reset(payload: RequestResetIn, db: Session = Depends(get_db)):
+def request_reset(payload: RequestResetIn, db: OrmSession = Depends(get_db)):
     user = db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none()
     if not user:
         return MessageOut(message="If this email exists, a reset token was sent")
@@ -144,7 +147,7 @@ def request_reset(payload: RequestResetIn, db: Session = Depends(get_db)):
     return MessageOut(message="If this email exists, a reset token was sent")
 
 @router.post("/reset-password", response_model=MessageOut)
-def reset_password(payload: ResetPasswordIn, db: Session = Depends(get_db)):
+def reset_password(payload: ResetPasswordIn, db: OrmSession = Depends(get_db)):
     email = parse_reset_token(payload.token)
     if not email:
         raise HTTPException(status_code=400, detail="Invalid or expired token")

@@ -13,7 +13,7 @@ from app.services.id_generator import make_request_id
 router = APIRouter()
 
 @router.get("/tools", response_model=list[ToolListItem], dependencies=[Depends(require_role(UserRole.OPERATOR))])
-def list_available_tools(db: Session = Depends(get_db)):
+def list_available_tools(db: OrmSession = Depends(get_db)):
     rows = db.execute(
     select(ToolInventory)
     .where(ToolInventory.quantity_available > 0)
@@ -31,7 +31,7 @@ def list_available_tools(db: Session = Depends(get_db)):
     ]
 
 @router.post("/tool-requests", response_model=ToolUsageShortOut, dependencies=[Depends(require_role(UserRole.OPERATOR))])
-def create_tool_request(payload: ToolUsageCreateIn, data=Depends(get_current_session), db: Session = Depends(get_db)):
+def create_tool_request(payload: ToolUsageCreateIn, data=Depends(get_current_session), db: OrmSession = Depends(get_db)):
     sess, operator = data
     inv = db.get(ToolInventory, payload.tool_id)
     if not inv:
@@ -62,7 +62,7 @@ def create_tool_request(payload: ToolUsageCreateIn, data=Depends(get_current_ses
     )
 
 @router.post("/tool-requests/{request_id}/mark-received", dependencies=[Depends(require_role(UserRole.OPERATOR))])
-def mark_received(request_id: str, data=Depends(get_current_session), db: Session = Depends(get_db)):
+def mark_received(request_id: str, data=Depends(get_current_session), db: OrmSession = Depends(get_db)):
     sess, operator = data
     req = db.execute(select(ToolUsageRequest).where(ToolUsageRequest.request_id == request_id)).scalar_one_or_none()
     if not req:
@@ -78,7 +78,7 @@ def mark_received(request_id: str, data=Depends(get_current_session), db: Sessio
     return {"message": "Marked received"}
 
 @router.post("/tool-requests/{request_id}/return", dependencies=[Depends(require_role(UserRole.OPERATOR))])
-def return_tool(request_id: str, data=Depends(get_current_session), db: Session = Depends(get_db)):
+def return_tool(request_id: str, data=Depends(get_current_session), db: OrmSession = Depends(get_db)):
     sess, operator = data
     req = db.execute(select(ToolUsageRequest).where(ToolUsageRequest.request_id == request_id)).scalar_one_or_none()
     if not req:

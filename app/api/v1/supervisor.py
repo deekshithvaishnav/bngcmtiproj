@@ -13,7 +13,7 @@ from app.services.id_generator import make_request_id
 router = APIRouter()
 
 @router.get("/tool-requests", dependencies=[Depends(require_role(UserRole.SUPERVISOR))])
-def list_pending_tool_requests(db: Session = Depends(get_db)):
+def list_pending_tool_requests(db: OrmSession = Depends(get_db)):
     rows = db.execute(
     select(ToolUsageRequest)
     .where(ToolUsageRequest.status == RequestStatus.PENDING)
@@ -32,7 +32,7 @@ def list_pending_tool_requests(db: Session = Depends(get_db)):
     ]
 
 @router.post("/tool-requests/{request_id}/approve", response_model=ApproveToolUsageOut, dependencies=[Depends(require_role(UserRole.SUPERVISOR))])
-def approve_tool_request(request_id: str, data=Depends(get_current_session), db: Session = Depends(get_db)):
+def approve_tool_request(request_id: str, data=Depends(get_current_session), db: OrmSession = Depends(get_db)):
     sess, user = data
     req = db.execute(select(ToolUsageRequest).where(ToolUsageRequest.request_id == request_id)).scalar_one_or_none()
     if not req:
@@ -71,7 +71,7 @@ def approve_tool_request(request_id: str, data=Depends(get_current_session), db:
     )
 
 @router.post("/tool-requests/{request_id}/reject", dependencies=[Depends(require_role(UserRole.SUPERVISOR))])
-def reject_tool_request(request_id: str, reason: str = "Not approved", db: Session = Depends(get_db)):
+def reject_tool_request(request_id: str, reason: str = "Not approved", db: OrmSession = Depends(get_db)):
     req = db.execute(select(ToolUsageRequest).where(ToolUsageRequest.request_id == request_id)).scalar_one_or_none()
     if not req:
         raise HTTPException(status_code=404, detail="Request not found")
@@ -85,7 +85,7 @@ def reject_tool_request(request_id: str, reason: str = "Not approved", db: Sessi
     return {"message": "Rejected"}
 
 @router.post("/tool-additions", response_model=ToolAdditionOut, dependencies=[Depends(require_role(UserRole.SUPERVISOR))])
-def create_tool_addition(payload: ToolAdditionCreateIn, data=Depends(get_current_session), db: Session = Depends(get_db)):
+def create_tool_addition(payload: ToolAdditionCreateIn, data=Depends(get_current_session), db: OrmSession = Depends(get_db)):
     sess, supervisor = data
     next_id = (db.execute(select(func.max(ToolAdditionRequest.id))).scalar() or 0) + 1
     rid = make_request_id("TAR", next_id)
@@ -113,7 +113,7 @@ def create_tool_addition(payload: ToolAdditionCreateIn, data=Depends(get_current
     )
 
 @router.get("/logs/approved-usage", dependencies=[Depends(require_role(UserRole.SUPERVISOR))])
-def approved_usage_logs(db: Session = Depends(get_db)):
+def approved_usage_logs(db: OrmSession = Depends(get_db)):
     rows = db.execute(
     select(ToolUsageRequest)
     .where(ToolUsageRequest.status == RequestStatus.APPROVED)

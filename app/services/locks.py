@@ -5,7 +5,7 @@ from app.models.role_lock import RoleLock
 from app.models.enums import UserRole
 from app.models.session import Session as SessionModel
 
-def get_active_lock(db: Session, role: UserRole):
+def get_active_lock(db: OrmSession, role: UserRole):
     lock = db.execute(select(RoleLock).where(RoleLock.role == role)).scalar_one_or_none()
     if not lock:
             return None
@@ -22,7 +22,7 @@ def get_active_lock(db: Session, role: UserRole):
         return None
     return lock
 
-def acquire_lock(db: Session, role: UserRole, session_row: SessionModel):
+def acquire_lock(db: OrmSession, role: UserRole, session_row: SessionModel):
     # Ensure a lock row exists
     lock = db.execute(select(RoleLock).where(RoleLock.role == role)).scalar_one_or_none()
     if not lock:
@@ -44,7 +44,7 @@ def acquire_lock(db: Session, role: UserRole, session_row: SessionModel):
     db.refresh(lock)
     return lock
 
-def release_lock_if_owner(db: Session, role: UserRole, session_row: SessionModel):
+def release_lock_if_owner(db: OrmSession, role: UserRole, session_row: SessionModel):
     lock = db.execute(select(RoleLock).where(RoleLock.role == role)).scalar_one_or_none()
     if not lock:
         return

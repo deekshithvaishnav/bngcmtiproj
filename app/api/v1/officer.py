@@ -18,7 +18,7 @@ from app.core.security import hash_password
 router = APIRouter()
 
 @router.post("/users", response_model=UserOut, dependencies=[Depends(require_role(UserRole.OFFICER))])
-def create_user(payload: UserCreateIn, db: Session = Depends(get_db)):
+def create_user(payload: UserCreateIn, db: OrmSession = Depends(get_db)):
     if db.execute(select(User).where(User.username == payload.username)).scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Username already exists")
     if db.execute(select(User).where(User.email == payload.email)).scalar_one_or_none():
@@ -39,12 +39,12 @@ def create_user(payload: UserCreateIn, db: Session = Depends(get_db)):
     return user
 
 @router.get("/users", response_model=list[UserOut], dependencies=[Depends(require_role(UserRole.OFFICER))])
-def list_users(db: Session = Depends(get_db)):
+def list_users(db: OrmSession = Depends(get_db)):
     users = db.execute(select(User).order_by(User.created_at.desc())).scalars().all()
     return users
 
 @router.delete("/users/{user_id}", response_model=MessageOut, dependencies=[Depends(require_role(UserRole.OFFICER))])
-def delete_user(user_id: int, db: Session = Depends(get_db)):
+def delete_user(user_id: int, db: OrmSession = Depends(get_db)):
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -53,7 +53,7 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     return MessageOut(message="User deleted")
 
 @router.get("/tool-additions", response_model=list[ToolAdditionOut], dependencies=[Depends(require_role(UserRole.OFFICER))])
-def list_tool_additions(status_filter: RequestStatus | None = None, db: Session = Depends(get_db)):
+def list_tool_additions(status_filter: RequestStatus | None = None, db: OrmSession = Depends(get_db)):
     stmt = select(ToolAdditionRequest)
     if status_filter:
         stmt = stmt.where(ToolAdditionRequest.status == status_filter)
@@ -72,7 +72,7 @@ def list_tool_additions(status_filter: RequestStatus | None = None, db: Session 
     ]
 
 @router.post("/tool-additions/{request_id}/approve", response_model=ApproveToolAdditionOut, dependencies=[Depends(require_role(UserRole.OFFICER))])
-def approve_tool_addition(request_id: str, data=Depends(get_current_session), db: Session = Depends(get_db)):
+def approve_tool_addition(request_id: str, data=Depends(get_current_session), db: OrmSession = Depends(get_db)):
     sess, officer = data
     req = db.execute(select(ToolAdditionRequest).where(ToolAdditionRequest.request_id == request_id)).scalar_one_or_none()
     if not req:
@@ -124,7 +124,7 @@ def approve_tool_addition(request_id: str, data=Depends(get_current_session), db
     )
 
 @router.post("/tool-additions/{request_id}/reject", response_model=MessageOut, dependencies=[Depends(require_role(UserRole.OFFICER))])
-def reject_tool_addition(request_id: str, reason: str = "Not approved", data=Depends(get_current_session), db: Session = Depends(get_db)):
+def reject_tool_addition(request_id: str, reason: str = "Not approved", data=Depends(get_current_session), db: OrmSession = Depends(get_db)):
     _, officer = data
     req = db.execute(select(ToolAdditionRequest).where(ToolAdditionRequest.request_id == request_id)).scalar_one_or_none()
     if not req:
@@ -139,7 +139,7 @@ def reject_tool_addition(request_id: str, reason: str = "Not approved", data=Dep
     return MessageOut(message="Rejected")
 
 @router.get("/session-logs", dependencies=[Depends(require_role(UserRole.OFFICER))])
-def session_logs(role: UserRole | None = None, username: str | None = None, status_filter: str | None = None, db: Session = Depends(get_db)):
+def session_logs(role: UserRole | None = None, username: str | None = None, status_filter: str | None = None, db: OrmSession = Depends(get_db)):
     stmt = select(SessionModel).join(User, User.id == SessionModel.user_id)
     if role:
         stmt = stmt.where(SessionModel.role == role)
@@ -169,7 +169,7 @@ def session_logs(role: UserRole | None = None, username: str | None = None, stat
     return result
 
 @router.get("/active-sessions", dependencies=[Depends(require_role(UserRole.OFFICER))])
-def active_sessions(db: Session = Depends(get_db)):
+def active_sessions(db: OrmSession = Depends(get_db)):
     now = datetime.now(timezone.utc)
     rows = db.execute(select(SessionModel).where(SessionModel.logout_at.is_(None))).scalars().all()
     active = []
