@@ -17,3 +17,4 @@ class UserOut(BaseModel):
 	contact_number: str
 	role: str
 	is_active: bool
+	# Add any other fields from your User model if needed

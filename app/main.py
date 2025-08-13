@@ -10,11 +10,11 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title=settings.APP_NAME)
 
 app.add_middleware(
-CORSMiddleware,
-allow_origins=[settings.CORS_ORIGINS],
-allow_credentials=True,
-allow_methods=[""],
-allow_headers=[""],
+    CORSMiddleware,
+    allow_origins=[settings.CORS_ORIGINS] if isinstance(settings.CORS_ORIGINS, str) else settings.CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"] ,
+    allow_headers=["*"]
 )
 
 app.include_router(api_router, prefix="/api")
