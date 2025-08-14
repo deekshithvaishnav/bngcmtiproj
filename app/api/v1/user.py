@@ -29,6 +29,19 @@ def create_user(user_in: UserCreateIn, db: Session = Depends(get_db)):
     db.refresh(user)
     return user
 
+@router.get("/list", response_model=list[UserOut])
+def list_users(db: Session = Depends(get_db)):
+    return db.query(User).all()
+
+@router.delete("/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    db.delete(user)
+    db.commit()
+    return {"message": "User deleted successfully"}
+
 class PasswordResetIn(BaseModel):
     username: str
     old_password: str

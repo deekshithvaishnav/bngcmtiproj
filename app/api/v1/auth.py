@@ -99,9 +99,9 @@ def logout(x_session_id: str | None = None, db: OrmSession = Depends(get_db)):
     sess = db.execute(select(SessionModel).where(SessionModel.session_id == x_session_id)).scalar_one_or_none()
     if not sess or sess.logout_at is not None:
         return MessageOut(message="Logged out")
-        sess.logout_at = _now()
-        sess.ended_reason = SessionEndReason.LOGOUT
-        db.commit()
+    sess.logout_at = _now()
+    sess.ended_reason = SessionEndReason.LOGOUT
+    db.commit()
     if sess.role in (UserRole.OFFICER, UserRole.SUPERVISOR):
         release_lock_if_owner(db, sess.role, sess)
     return MessageOut(message="Logged out")
